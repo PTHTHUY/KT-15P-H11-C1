@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kiểm Tra 15 Phút - Hóa Học 11-LẦN 1</title>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --secondary: #e9ecef;
+            --danger: #dc3545;
+            --success: #28a745;
+            --warning: #ffc107;
+            --text-dark: #333;
+            --bg-light: #f8f9fa;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-light); color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
+        .screen { display: none; flex-direction: column; flex: 1; width: 100%; max-width: 800px; margin: 0 auto; background: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .screen.active { display: flex; }
+        
+        /* Setup Screen */
+        .setup-container { padding: 20px; }
+        .setup-container h1 { font-size: 24px; text-align: center; color: var(--primary); margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
+        .btn { display: block; width: 100%; padding: 15px; background: var(--primary); color: #fff; text-align: center; font-size: 18px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn:disabled { background: #aaa; }
+        .btn-danger { background: var(--danger); }
+        .btn-warning { background: var(--warning); color: #000; }
+        
+        /* Game Screen */
+        .info-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: var(--primary); color: #fff; font-size: 14px; position: sticky; top: 0; z-index: 10; }
+        .timer-box { text-align: right; font-weight: bold; }
+        
+        .question-area { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-start; }
+        .part-title { font-size: 18px; font-weight: bold; color: var(--danger); margin-bottom: 10px; text-transform: uppercase; border-bottom: 2px solid var(--danger); padding-bottom: 5px; }
+        
+        /* Smart Font Size Container */
+        .q-content { font-size: 24px; line-height: 1.5; margin-bottom: 20px; transition: font-size 0.2s; word-wrap: break-word; }
+        
+        /* Options */
+        .option-btn { display: block; width: 100%; padding: 15px; margin-bottom: 10px; background: var(--secondary); border: 2px solid transparent; border-radius: 8px; text-align: left; font-size: 1.1em; cursor: pointer; transition: 0.2s; }
+        .option-btn.selected { background: #cce5ff; border-color: var(--primary); font-weight: bold; }
+        
+        /* True False */
+        .tf-stmt { margin-bottom: 15px; padding: 10px; background: var(--secondary); border-radius: 8px; }
+        .tf-text { font-size: 1em; margin-bottom: 10px; }
+        .tf-controls { display: flex; gap: 10px; }
+        .tf-btn { flex: 1; padding: 10px; border: 1px solid #ccc; background: #fff; border-radius: 8px; font-size: 1em; cursor: pointer; }
+        .tf-btn.selected-true { background: var(--success); color: #fff; border-color: var(--success); }
+        .tf-btn.selected-false { background: var(--danger); color: #fff; border-color: var(--danger); }
+        
+        /* Short Answer */
+        .sa-input { width: 100%; padding: 15px; font-size: 1.2em; border: 2px solid var(--primary); border-radius: 8px; margin-top: 10px; }
+        
+        /* Navigation */
+        .nav-bar { display: flex; gap: 10px; padding: 10px 15px; background: #fff; border-top: 1px solid #ccc; }
+        .nav-btn { flex: 1; padding: 12px; background: var(--secondary); border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .nav-btn:active { background: #ccc; }
+        
+        .nav-grid-container { padding: 15px; background: #eee; border-top: 1px solid #ccc; }
+        .nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 8px; }
+        .grid-item { padding: 10px 0; text-align: center; background: #fff; border: 1px solid #aaa; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .grid-item.answered { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .grid-item.locked { background: #333; color: #fff; border-color: #000; text-decoration: line-through; }
+        .grid-item.active { border: 3px solid var(--warning); }
+        
+        /* Google Sheets delivery status – only shown after submission */
+        .sheet-status { margin: 16px 0 8px; border: 1px solid #cbd5e1; border-radius: 8px;
+            background: #f8fafc; padding: 12px 14px; line-height: 1.5; font-size: 15px;
+            overflow-wrap: anywhere; }
+        .sheet-status[data-state="sending"] { border-color: #93c5fd; }
+        .sheet-status[data-state="verified"] { border-color: #16a34a; background: #ecfdf5; }
+        .sheet-status[data-state="unconfirmed"] { border-color: #f59e0b; background: #fffbeb; }
+        .sheet-status[data-state="failed"] { border-color: #fca5a5; }
+        /* Result Screen */
+        .result-container { padding: 20px; }
+        .result-title { text-align: center; color: var(--success); font-size: 28px; margin-bottom: 10px; }
+        .score-box { background: var(--secondary); padding: 15px; border-radius: 8px; text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px; }
+        
+        /* Lock Overlay */
+        .lock-overlay { position: relative; }
+        .lock-overlay::after { content: "CÂU HỎI ĐÃ BỊ KHÓA"; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; z-radius: 8px; z-index: 5; }
+
+        /* NÂNG CẤP: hiển thị câu hỏi trọn màn hình, để font có vùng tính toán thực tế. */
+        #screen-game.active { flex: 0 0 100vh; flex-basis: 100dvh; height: 100vh; height: 100dvh; max-height: 100dvh; min-height: 0; overflow: hidden; }
+        #screen-game .question-area { min-height: 0; }
+        #q-lock-wrap { font-size: 18px; min-width: 0; }
+        #q-lock-wrap .q-content { font-size: 1.08em; line-height: 1.35; margin-bottom: 0.65em;
+            overflow-wrap: anywhere; transition: none; }
+        #q-lock-wrap .option-btn { font-size: 1em; line-height: 1.3; padding: 0.6em 0.7em;
+            margin-bottom: 0.42em; min-height: 40px; overflow-wrap: anywhere; }
+        #q-lock-wrap .tf-stmt { margin-bottom: 0.5em; padding: 0.48em; }
+        #q-lock-wrap .tf-text { font-size: 1em; line-height: 1.28; margin-bottom: 0.36em;
+            overflow-wrap: anywhere; }
+        #q-lock-wrap .tf-btn { font-size: 0.86em; padding: 0.35em 0.45em; min-height: 38px; }
+        #q-lock-wrap .sa-input { font-size: 1em; padding: 0.6em 0.7em; }
+
+        /* BỔ SUNG RIÊNG: Xem lại câu sai sau khi nộp bài (chỉ đọc). */
+        .review-container { padding: 20px; }
+        .review-title { font-size: 24px; line-height: 1.35; color: var(--primary); text-align: center; margin-bottom: 12px; }
+        .review-summary { background: #e9f2ff; padding: 14px; border-radius: 8px; margin-bottom: 18px; line-height: 1.5; }
+        .review-card { border: 1px solid #d4dce6; border-radius: 10px; margin-bottom: 18px; padding: 16px; background: #fff; }
+        .review-card-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .review-card-title { font-size: 18px; color: var(--primary); font-weight: bold; }
+        .review-tag { font-size: 13px; font-weight: bold; padding: 5px 9px; background: #fff3cd; color: #674d00; border-radius: 999px; }
+        .review-tag.locked { background: #e9ecef; color: #333; }
+        .review-question { font-size: 19px; font-weight: 600; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; margin-bottom: 14px; }
+        .review-option, .review-statement { padding: 11px 12px; background: #f4f6f8; border-radius: 8px; margin-bottom: 8px; line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
+        .review-option.is-correct { border: 2px solid var(--success); background: #edfff1; }
+        .review-option.is-selected:not(.is-correct) { border: 2px solid var(--danger); background: #fff0f0; }
+        .review-option-mark { display: block; font-size: 13px; font-weight: bold; margin-top: 5px; }
+        .review-answer-line { line-height: 1.55; padding: 8px 10px; margin-top: 8px; background: #f3f5f8; border-radius: 6px; overflow-wrap: anywhere; white-space: pre-wrap; }
+        .review-answer-line.student { border-left: 4px solid var(--primary); }
+        .review-answer-line.correct { border-left: 4px solid var(--success); }
+        .review-answer-label { font-weight: bold; }
+        .review-statement.is-wrong { border-left: 3px solid var(--danger); }
+        .review-note { font-size: 14px; line-height: 1.5; margin: 10px 0; color: #4b5563; }
+        @media (max-width: 480px) {
+            .review-container { padding: 14px; }
+            .review-card { padding: 12px; }
+            .review-question { font-size: 18px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- MÀN HÌNH BẮT ĐẦU -->
+<div id="screen-setup" class="screen active">
+    <div class="setup-container">
+        <h1>KIỂM TRA 15 PHÚT – HÓA HỌC 12</h1>
+        <div class="form-group">
+            <label>Họ và Tên:</label>
+            <input type="text" id="studentName" placeholder="Nhập họ và tên...">
+        </div>
+        <div class="form-group">
+            <label>Lớp:</label>
+            <input type="text" id="studentClass" placeholder="Nhập lớp 11A4...">
+        </div>
+        
+        
+        <div style="margin-top: 15px; font-size: 14px; color: var(--danger); font-weight: bold;">
+            ⚠️ Chú ý: Hệ thống chống gian lận được kích hoạt. Nếu rời khỏi tab/trang trong lúc làm bài, câu hỏi hiện tại sẽ bị khóa và nhận 0 điểm!
+        </div>
+
+        <button class="btn" id="btnStart" onclick="startTest()">🚀 BẮT ĐẦU KIỂM TRA</button>
+    </div>
+</div>
+
+<!-- MÀN HÌNH GAME -->
+<div id="screen-game" class="screen">
+    <div class="info-bar">
+        <div>
+            <div id="info-name" style="font-weight:bold;"></div>
+            <div id="info-part"></div>
+        </div>
+        <div class="timer-box">
+            <div>Tổng: <span id="timer-total" style="color:var(--warning);">00:00</span></div>
+            <div>Phần: <span id="timer-part">00:00</span></div>
+        </div>
+    </div>
+    
+    <div class="question-area" id="q-container-wrap">
+        <div class="part-title" id="lbl-part-title">PHẦN 1 - TRẮC NGHIỆM 4 LỰA CHỌN</div>
+        <div id="q-lock-wrap">
+            <div class="q-content" id="q-text">Đang tải nội dung...</div>
+            <div id="q-options"></div>
+        </div>
+    </div>
+
+    <div class="nav-bar">
+        <button class="nav-btn" onclick="prevQuestion()">⬅️ Trước</button>
+        <button class="nav-btn" onclick="nextQuestion()">Sau ➡️</button>
+    </div>
+    
+    <div class="nav-grid-container">
+        <div style="margin-bottom: 10px; font-weight: bold;">Danh sách câu hỏi:</div>
+        <div class="nav-grid" id="nav-grid"></div>
+        <button class="btn btn-warning" id="btnFinishPart" style="margin-top:15px; display:none;" onclick="finishPart()">✅ HOÀN THÀNH PHẦN NÀY</button>
+        <button class="btn btn-danger" id="btnSubmit" style="margin-top:15px; display:none;" onclick="submitTest(false)">📤 NỘP BÀI</button>
+    </div>
+</div>
+
+<!-- MÀN HÌNH KẾT QUẢ -->
+<div id="screen-result" class="screen">
+    <div class="result-container">
+        <h1 class="result-title">KẾT QUẢ BÀI KIỂM TRA</h1>
+        <div class="score-box">
+            <div id="res-name"></div>
+            <div style="font-size: 32px; color: var(--danger); margin: 10px 0;" id="res-score">0.00 / 10.00</div>
+            <div style="font-size: 16px; font-weight: normal;" id="res-details"></div>
+        </div>
+        <div id="res-violations" style="color:var(--danger); font-weight:bold; margin-bottom: 20px;"></div>
+        <div id="sheet-save-status" class="sheet-status" role="status" aria-live="polite"
+             data-state="idle">Kết quả sẽ được gửi về Google Sheets, tab 11A4, sau khi nộp bài.</div>
+        <button class="btn btn-warning" id="btnResendSheet" style="display:none;"
+                onclick="resendSheetResult()">↻ GỬI LẠI KẾT QUẢ LÊN GOOGLE SHEETS</button>
+        <button class="btn" id="btnReviewWrong" onclick="showWrongAnswers()">🔍 XEM LẠI CÁC CÂU SAI</button>
+        <button class="btn" onclick="location.reload()">🔄 LÀM BÀI KHÁC</button>
+    </div>
+</div>
+
+<!-- MÀN HÌNH XEM LẠI: CHỈ XUẤT HIỆN SAU KHI NỘP BÀI -->
+<div id="screen-review" class="screen">
+    <div class="review-container">
+        <h1 class="review-title">🔍 XEM LẠI CÁC CÂU SAI</h1>
+        <div id="review-summary" class="review-summary" role="status"></div>
+        <div id="review-list"></div>
+        <button class="btn" onclick="backToResults()">⬅️ QUAY VỀ KẾT QUẢ</button>
+    </div>
+</div>
+
+<script>
+// =====================================================
+// KẾT NỐI APP SCRIPT RIÊNG LỚP 11A4
+// URL Web App triển khai riêng cho lớp 11A4 do giáo viên cung cấp.
+// Máy chủ Apps Script ghi đúng cột A:G trong tab 11A4.
+// =====================================================
+const GOOGLE_SHEET_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxVyT3nF1NMt0ZKP5Rx6M8N5IO_l2SXMoHeD4JQXdk3fJp2gC4cflGI19UXeNQ532628g/exec";
+// Endpoint chỉ nhận lớp 11A4; không dùng URL này cho các lớp khác.
+function normalizeClassForSheet(className) {
+    const raw = String(className || '').trim();
+    return /^11\s*A\s*4$/i.test(raw) ? '11A4' : raw;
+}
+let sheetAttemptId = "";
+let sheetPayload = null;
+let sheetSending = false;
+
+function makeSheetAttemptId() {
+    if(typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+    return 'chem12-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 13);
+}
+
+// KẾT NỐI CÓ BIÊN NHẬN: POST no-cors, rồi GET status qua JSONP.
+// Google Apps Script chỉ công bố trạng thái saved khi đã ghi xong dòng vào Sheet.
+let sheetVerifySequence = 0;
+function showSheetSendState(kind, message) {
+    const status = document.getElementById('sheet-save-status');
+    const button = document.getElementById('btnResendSheet');
+    status.dataset.state = kind;
+    status.textContent = message;
+    // Không hiện nút GỬI LẠI khi đã được máy chủ xác nhận lưu.
+    button.style.display = (kind === 'failed' || kind === 'unconfirmed') ? 'block' : 'none';
+    button.disabled = sheetSending;
+}
+
+// Kiểm tra biên nhận có thật ở Apps Script bằng thẻ script từ Web App.
+// JSONP chỉ đọc trạng thái theo mã lượt, không gửi thông tin học sinh qua URL.
+function fetchSheetReceipt(attemptId, timeoutMs = 8000) {
+    return new Promise((resolve, reject) => {
+        if (!/^[A-Za-z0-9._:-]{1,128}$/.test(String(attemptId || ''))) {
+            reject(new Error('Thiếu mã lượt làm bài hợp lệ.'));
+            return;
+        }
+        const callbackName = 'chem11a4Receipt' + (++sheetVerifySequence);
+        const script = document.createElement('script');
+        let finished = false;
+        let timer;
+        const cleanup = () => {
+            clearTimeout(timer);
+            script.remove();
+            delete window[callbackName];
+        };
+        const finish = (error, value) => {
+            if(finished) return;
+            finished = true;
+            cleanup();
+            if(error) reject(error); else resolve(value);
+        };
+        window[callbackName] = data => finish(null, data);
+        script.onerror = () => finish(new Error('Không đọc được biên nhận từ Apps Script.'));
+        const query = new URLSearchParams({
+            mode: 'status', attemptId: String(attemptId),
+            callback: callbackName, _: String(Date.now())
+        });
+        script.src = GOOGLE_SHEET_SCRIPT_URL + '?' + query.toString();
+        timer = setTimeout(() => finish(new Error('Hết thời gian chờ phản hồi biên nhận.')), timeoutMs);
+        document.head.appendChild(script);
+    });
+}
+function waitForSheetReceipt(attemptId) {
+    let retries = 0;
+    const check = async () => {
+        const result = await fetchSheetReceipt(attemptId);
+        if(result && result.status === 'saved' && result.ok === true) return result;
+        if(result && result.status === 'error') {
+            throw new Error(result.error || 'Apps Script từ chối lưu kết quả.');
+        }
+        if(++retries >= 4) return null;
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        return check();
+    };
+    return check();
+}
+async function sendResultToGoogleSheet() {
+    if(gameState !== 'DONE' || !sheetPayload || sheetSending) return;
+    sheetSending = true;
+    showSheetSendState('sending', 'Đang gửi và kiểm tra Google Sheets lớp 11A4…');
+    const retry = document.getElementById('btnResendSheet');
+    retry.disabled = true;
+    try {
+        // Trình duyệt không đọc được POST cross-origin no-cors. Tuy nhiên có thể
+        // kiểm chứng bằng biên nhận độc lập (doGet) trong chính Apps Script mới.
+        await fetch(GOOGLE_SHEET_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            redirect: 'follow',
+            cache: 'no-store',
+            headers: {'Content-Type': 'text/plain;charset=utf-8'},
+            body: JSON.stringify(sheetPayload)
+        });
+        const receipt = await waitForSheetReceipt(sheetPayload.attemptId);
+        if (receipt) {
+            showSheetSendState('verified', '✅ ĐÃ LƯU THÀNH CÔNG vào Google Sheets, tab 11A4, dòng ' + receipt.row + '.');
+        } else {
+            showSheetSendState('unconfirmed', '⚠️ Đã gửi nhưng máy chủ chưa xác nhận lưu. Hãy kiểm tra tab 11A4 hoặc bấm GỬI LẠI. Không nên đóng trang khi chưa kiểm tra.');
+        }
+    } catch (err) {
+        console.error('Lỗi lưu điểm 11A4:', err);
+        showSheetSendState('failed', '❌ CHƯA XÁC NHẬN LƯU ĐIỂM: ' + (err.message || String(err)) + '. Kiểm tra quyền triển khai Apps Script và bấm GỬI LẠI.');
+    } finally {
+        sheetSending = false;
+        retry.disabled = false;
+    }
+}
+function resendSheetResult() {
+    // Gửi lại cùng attemptId, Apps Script không thêm dòng nếu lượt đã ghi trước đó.
+    sendResultToGoogleSheet();
+}
+
+// =====================================================
+// NGÂN HÀNG CÂU HỎI – DỮ LIỆU 100% TỪ FILE NGUỒN
+// KHÔNG TỰ Ý THAY ĐỔI ĐÁP ÁN
+// =====================================================
+const questionBank = {
+    part1: [
+        { id: "P1_01", text: "Phản ứng thuận nghịch là phản ứng", opts: ["A. Trong cùng điều kiện, phản ứng xảy ra theo hai chiều trái ngược nhau.", "B. Có phương trình hoá học được biểu diễn bằng mũi tên một chiều.", "C. Chỉ xảy ra theo một chiều nhất định.", "D. Xảy ra giữa hai chất khí."], ans: 0 },
+        { id: "P1_02", text: "Mối quan hệ giữa tốc độ phản ứng thuận vt và tốc độ phản ứng nghịch vn ở trạng thái cân bằng được biểu diễn như thế nào?", opts: ["A. vt = 2vn", "B. vt = vn ≠ 0", "C. vt = 0,5vn", "D. vt = vn = 0"], ans: 1 },
+        { id: "P1_03", text: "Điều nào sau đây đúng với phản ứng hóa học ở trạng thái cân bằng?", opts: ["A. Chỉ có phản ứng thuận dừng lại.", "B. Chỉ có phản ứng nghịch dừng lại.", "C. Cả phản ứng thuận và nghịch dừng lại.", "D. Tốc độ của phản ứng thuận và nghịch bằng nhau."], ans: 3 },
+        { id: "P1_04", text: "Trong các phát biểu sau đây, phát biểu nào đúng khi một hệ ở trạng thái cân bằng?", opts: ["A. Phản ứng thuận đã dừng.", "B. Phản ứng nghịch đã dừng.", "C. Nồng độ chất tham gia và sản phẩm bằng nhau.", "D. Nồng độ của các chất trong hệ không đổi."], ans: 3 },
+        { id: "P1_05", text: "Tại nhiệt độ không đổi, ở trạng thái cân bằng,", opts: ["A. Thành phần của các chất trong hỗn hợp phản ứng không thay đổi.", "B. Thành phần của các chất trong hỗn hợp phản ứng vẫn liên tục thay đổi.", "C. Phản ứng hoá học không xảy ra.", "D. Tốc độ phản ứng hoá học xảy ra chậm dần."], ans: 0 },
+        { id: "P1_06", text: "Khi một hệ ở trạng thái cân bằng thì trạng thái đó là", opts: ["A. Cân bằng tĩnh.", "B. Cân bằng động.", "C. Cân bằng bền.", "D. Cân bằng không bền."], ans: 1 },
+        { id: "P1_07", text: "Sự phá vỡ cân bằng cũ để chuyển sang một cân bằng mới do các yếu tố bên ngoài tác động được gọi là", opts: ["A. Sự biến đổi chất.", "B. Sự dịch chuyển cân bằng.", "C. Sự chuyển đổi vận tốc phản ứng.", "D. Sự biến đổi hằng số cân bằng."], ans: 1 },
+        { id: "P1_08", text: "Cân bằng hóa học liên quan đến loại phản ứng", opts: ["A. Không thuận nghịch.", "B. Thuận nghịch.", "C. Một chiều.", "D. Oxi hóa khử."], ans: 1 },
+        { id: "P2_01", text: "Dung dịch nào dẫn điện được", opts: ["A. NaCl", "B. C2H5OH", "C. HCHO", "D. C6H12O6"], ans: 0 },
+        { id: "P2_02", text: "Trường hợp nào không dẫn điện được", opts: ["A. NaCl rắn, khan", "B. NaCl trong nước", "C. NaCl nóng chảy", "D. NaOH nóng chảy"], ans: 0 },
+        { id: "P2_03", text: "Câu nào sau đây là đúng khi nói về sự điện li ?", opts: ["A. Sự điện li là sự hòa tan một chất vào nước tạo thành dd.", "B. Sự điện li là sự phân li một chất dưới tác dụng của dòng điện.", "C. Sự điện li là sự phân li một chất thành ion dương hoặc ion âm.", "D. Sự điện li thực chất là quá trình oxi hóa - khử."], ans: 2 },
+        { id: "P2_04", text: "Chất nào dưới đây không phân li ra ion khi hòa tan trong nước ?", opts: ["A. MgCl2.", "B. HClO3.", "C. Ba(OH)2.", "D. C6H12O6."], ans: 3 },
+        { id: "P2_05", text: "Chất nào sau đây là điện li yếu", opts: ["A. NaCl", "B. HCl", "C. HF", "D. KOH"], ans: 2 },
+        { id: "P2_06", text: "Chất nào sau đây là điện li mạnh", opts: ["A. HF", "B. MgO", "C. KOH", "D. Fe(OH)3"], ans: 2 },
+        { id: "P2_07", text: "Dãy chất nào sau đây khi tan trong nước đều là chất điện li mạnh?", opts: ["A. Cu(OH)2, NaCl, C2H5OH, HCl.", "B. C6H12O6, Na2SO4, NaNO3, H2SO4.", "C. NaOH, NaCl, Na2SO4, HNO3.", "D. CH3COOH, NaOH, CH3COONa, Ba(OH)2."], ans: 2 },
+        { id: "P2_08", text: "Dãy chất nào sau đây khi tan trong nước đều là chất điện li yếu?", opts: ["A. H2S, H2SO3, H2SO4.", "B. H2CO3, H3PO4, CH3COOH, Ba(OH)2.", "C. H2S, CH3COOH, HClO.", "D. H2CO3, H2SO3, HClO, Al2(SO4)3."], ans: 2 },
+        { id: "P2_09", text: "Phương trình điện li nào dưới đây viết không đúng?", opts: ["A. HCl → H+ + Cl-", "B. CH3COOH ⇌ CH3COO- + H+", "C. H3PO4 → 3H+ + PO43-", "D. Na3PO4 → 3Na+ + PO43-"], ans: 2 },
+        { id: "P2_10", text: "Phương trình điện li nào đúng?", opts: ["A. CaCl2 → Ba+ + 2Cl+", "B. Ca(OH)2 → Ca+ + 2OH+", "C. AlCl3 → Al3+ + 3Cl2-", "D. Al2(SO4)3 → 2Al3+ + 3SO42-"], ans: 3 }
+    ],
+    part2: [
+        { id: "TF_01", text: "Cho các phát biểu sau, phát biểu nào đúng, phát biểu nào sai?", stmts: ["a) Trạng thái cân bằng của phản ứng thuận nghịch là trạng thái tại đó tất cả các chất phản ứng có nồng độ bằng 0.", "b) Tại thời điểm cân bằng phản ứng thuận nghịch hỗn hợp luôn chứa nhiều chất sản phẩm hơn chất phản ứng.", "c) Ở trạng thái cân bằng, phản ứng thuận và phản ứng nghịch vẫn tiếp diễn với tốc độ bằng nhau.", "d) Trong phản ứng thuận nghịch, tại thời điểm cân bằng tốc độ phản ứng thuận luôn bằng tốc độ phản ứng nghịch."], ans: [false, false, true, true] },
+        { id: "TF_02", text: "Các biện pháp để tăng hiệu suất phản ứng tổng hợp ammonia: N2(g) + 3H2(g) ⇌ 2NH3(g) ΔrH298 = -92 kJ", stmts: ["a) Lấy bớt NH3 ra khỏi sản phẩm.", "b) Giảm nhiệt độ của phản ứng.", "c) Tăng áp suất.", "d) Tăng nhiệt độ của phản ứng."], ans: [true, true, true, false] },
+        { id: "TF_03", text: "Đồ thị biểu diễn sự thay đổi tốc độ phản ứng H2(g) + I2(g) ⇌ 2HI(g). Hãy chọn phát biểu đúng hay sai:", stmts: ["a) Đường cong (a) đi xuống biểu diễn sự thay đổi tốc độ của phản ứng thuận.", "b) Đường cong (b) đi lên biểu diễn sự thay đổi tốc độ phản ứng nghịch.", "c) Ở trạng thái cân bằng, nồng độ của các chất H2, I2 và HI bằng nhau.", "d) Ở trạng thái cân bằng, tốc độ phản ứng nghịch lớn hơn phản ứng thuận."], ans: [true, true, false, false] },
+        { id: "TF_04", text: "Cho các phát biểu về chất điện li:", stmts: ["a) Chất không tan trong nước là chất điện li yếu.", "b) Tất cả các chất tan được trong nước đều là chất điện li mạnh.", "c) Chất điện li yếu là chất khi tan trong nước chỉ có một số phân tử phân li thành ion.", "d) Trong phương trình điện li của chất điện li mạnh, biểu diễn bằng mũi tên một chiều."], ans: [false, false, true, true] }
+    ],
+    part3: [
+        { id: "SA_01", text: "Nồng độ mol/L của Cl- trong dung dịch CaCl2 0,3 M là:", ans: "0,6" },
+        { id: "SA_02", text: "Trong dung dịch AlCl3 0,2M nồng độ ion Cl- là:", ans: "0,6" },
+        { id: "SA_03", text: "Trong dung dịch FeCl2 0,3M nồng độ ion Fe2+ là:", ans: "0,3" },
+        { id: "SA_04", text: "Tính pH của dd thu được sau khi trộn: 300mL dd HCl 0,1M vào 200mL dd KOH 0,1M (Làm tròn đến 2 chữ số thập phân).", ans: "1,70" },
+        { id: "SA_05", text: "Tính pH của dd thu được sau khi trộn: 50mL dd HNO3 0,12M vào 50 mL dd NaOH 0,1M.", ans: "2,00" },
+        { id: "SA_06", text: "Tính pH của dd thu được sau khi trộn: 50mL dd NaOH 0,12M vào 100mL dd HCl 0,08M (Làm tròn đến 2 chữ số thập phân).", ans: "1,88" }
+    ]
+};
+
+// =====================================================
+// BIẾN TRẠNG THÁI HỆ THỐNG
+// =====================================================
+let studentInfo = { name: "", class: "" };
+let timeConfig = { t1: 8, t2: 6, t3: 6, total: 20 };
+let partOrder = [];
+let currentPartIndex = 0;
+let paper = [];
+let currentIndex = 0;
+let partTimeBudget = 0;
+let partStartTime = 0;
+let totalStartTime = 0;
+let timerInterval;
+let gameState = 'IDLE'; 
+let violationCount = 0;
+
+// =====================================================
+// KHỞI TẠO BÀI KIỂM TRA
+// =====================================================
+function startTest() {
+    studentInfo.name = document.getElementById("studentName").value.trim();
+    studentInfo.class = document.getElementById("studentClass").value.trim();
+    
+    if(!studentInfo.name || !studentInfo.class) {
+        alert("⚠️ Vui lòng nhập đầy đủ Họ và tên và Lớp trước khi bắt đầu.");
+        return;
+    }
+    // App Script mới chỉ nhận 11A4. Chặn lớp khác để không gửi bài vào endpoint sai.
+    studentInfo.class = normalizeClassForSheet(studentInfo.class);
+    if(studentInfo.class !== '11A4') {
+        alert("⚠️ Game này chỉ dành cho lớp 11A4. Vui lòng nhập đúng tên lớp 11A4.");
+        document.getElementById('studentClass').focus();
+        return;
+    }
+    // Cấp mã lượt riêng; mã này được tái sử dụng nếu giáo viên bấm gửi lại.
+    sheetAttemptId = makeSheetAttemptId();
+    sheetPayload = null;
+
+
+    // Thời gian cố định, không có biểu mẫu chỉnh sửa trên màn hình học sinh:
+    // P1 8 phút + P2 6 phút + P3 6 phút = 20 phút.
+    // Giữ nguyên cơ chế đồng hồ, chuyển phần và cộng dồn thời gian cũ.
+    timeConfig.t1 = 8;
+    timeConfig.t2 = 6;
+    timeConfig.t3 = 6;
+    timeConfig.total = 20;
+
+    // Đảo ngẫu nhiên phần 1 và 2. Phần 3 luôn cuối
+    partOrder = Math.random() < 0.5 ? [1, 2, 3] : [2, 1, 3];
+    currentPartIndex = 0;
+    
+    generatePaper();
+    
+    document.getElementById("screen-setup").classList.remove("active");
+    document.getElementById("screen-game").classList.add("active");
+    document.getElementById("info-name").innerText = `${studentInfo.name} - ${studentInfo.class}`;
+    
+    totalStartTime = Date.now();
+    startPart();
+    gameState = 'PLAYING';
+    
+    timerInterval = setInterval(updateTimer, 1000);
+}
+
+function generatePaper() {
+    paper = [];
+    
+    let partsRef = {
+        1: { type: 'MC', count: 18, data: questionBank.part1 },
+        2: { type: 'TF', count: 4, data: questionBank.part2 },
+        3: { type: 'SA', count: 6, data: questionBank.part3 }
+    };
+
+    // Đẩy vào paper theo thứ tự partOrder
+    partOrder.forEach(partNum => {
+        let conf = partsRef[partNum];
+        // Xáo trộn nhẹ để lấy câu (Do dữ liệu demo đúng bằng số lượng nên chỉ shuffle vị trí)
+        let shuffledData = conf.data.sort(() => Math.random() - 0.5).slice(0, conf.count);
+        
+        shuffledData.forEach((q, idx) => {
+            let item = { ...q, partNum: partNum, locked: false, answer: null };
+            // Xáo trộn options cho Trắc nghiệm
+            if(partNum === 1) {
+                let opts = q.opts.map((txt, i) => ({txt, origIdx: i}));
+                opts.sort(() => Math.random() - 0.5);
+                item.dispOpts = opts;
+                item.answer = null; 
+            }
+            if(partNum === 2) {
+                item.answer = [null, null, null, null];
+            }
+            paper.push(item);
+        });
+    });
+}
+
+function startPart() {
+    let currentPartNum = partOrder[currentPartIndex];
+    let allocatedTime = timeConfig[`t${currentPartNum}`] * 60; 
+    partTimeBudget += allocatedTime; // Cộng dồn nếu có
+    partStartTime = Date.now();
+    
+    // Tìm index câu đầu tiên của phần này
+    currentIndex = paper.findIndex(q => q.partNum === currentPartNum);
+    
+    renderQuestion();
+    renderNavigation();
+}
+
+function finishPart(auto = false) {
+    if(!auto && !confirm("Bạn có chắc chắn muốn kết thúc phần này? Thời gian còn dư sẽ được chuyển sang phần tiếp theo. Sau khi chuyển, bạn không thể quay lại phần này.")) return;
+    
+    let used = (Date.now() - partStartTime) / 1000;
+    let remaining = Math.max(0, partTimeBudget - used);
+    
+    currentPartIndex++;
+    if(currentPartIndex < 3) {
+        partTimeBudget = remaining; // Mang thời gian dư sang phần tiếp theo
+        startPart();
+    } else {
+        submitTest(true);
+    }
+}
+
+// =====================================================
+// HIỂN THỊ CÂU HỎI & UI
+// =====================================================
+function renderQuestion() {
+    let q = paper[currentIndex];
+    let qTitle = "";
+    if(q.partNum === 1) qTitle = "PHẦN 1 - TRẮC NGHIỆM 4 LỰA CHỌN";
+    if(q.partNum === 2) qTitle = "PHẦN 2 - TRẮC NGHIỆM ĐÚNG/SAI";
+    if(q.partNum === 3) qTitle = "PHẦN 3 - TRẢ LỜI NGẮN";
+    
+    document.getElementById("lbl-part-title").innerText = qTitle;
+    document.getElementById("info-part").innerText = `Câu ${getLocalQuestionIndex(currentIndex)} / ${getPartLength(q.partNum)}`;
+    
+    let qWrap = document.getElementById("q-lock-wrap");
+    if(q.locked) {
+        qWrap.className = "lock-overlay";
+    } else {
+        qWrap.className = "";
+    }
+
+    let html = `<div style="font-weight:bold; margin-bottom: 10px;">Câu ${getLocalQuestionIndex(currentIndex)}:</div>`;
+    html += `<div>${q.text}</div>`;
+    document.getElementById("q-text").innerHTML = html;
+    
+    let optHtml = "";
+    if(q.partNum === 1) {
+        q.dispOpts.forEach((opt, i) => {
+            let sel = (q.answer === opt.origIdx) ? "selected" : "";
+            optHtml += `<button class="option-btn ${sel}" onclick="selectMC(${opt.origIdx})" ${q.locked?'disabled':''}>${opt.txt}</button>`;
+        });
+    } else if(q.partNum === 2) {
+        q.stmts.forEach((stmt, i) => {
+            let sT = q.answer[i] === true ? "selected-true" : "";
+            let sF = q.answer[i] === false ? "selected-false" : "";
+            optHtml += `
+                <div class="tf-stmt">
+                    <div class="tf-text">${stmt}</div>
+                    <div class="tf-controls">
+                        <button class="tf-btn ${sT}" onclick="selectTF(${i}, true)" ${q.locked?'disabled':''}>ĐÚNG</button>
+                        <button class="tf-btn ${sF}" onclick="selectTF(${i}, false)" ${q.locked?'disabled':''}>SAI</button>
+                    </div>
+                </div>`;
+        });
+    } else if(q.partNum === 3) {
+        let val = q.answer || "";
+        optHtml += `<input type="text" class="sa-input" value="${val}" onkeyup="inputSA(this.value)" placeholder="Nhập câu trả lời của bạn..." ${q.locked?'disabled':''}>`;
+    }
+    document.getElementById("q-options").innerHTML = optHtml;
+    
+    renderNavigation();
+    smartAutoFontSize();
+}
+
+// Tìm kích cỡ chữ LỚN NHẤT vừa khung hiện tại cho TOÀN BỘ câu hỏi,
+// 4 phương án / 4 mệnh đề Đúng–Sai / ô trả lời ngắn (không chỉ phần đề bài).
+// Nếu một câu quá dài, giữ tối thiểu 17px và cho phép cuộn vùng câu hỏi;
+// không che chữ, không thu nhỏ đến mức khó đọc trên điện thoại.
+function smartAutoFontSize() {
+    if(gameState === 'DONE') return;
+    const container = document.getElementById('q-container-wrap');
+    const panel = document.getElementById('q-lock-wrap');
+    if(!container || !panel || !document.getElementById('screen-game').classList.contains('active')) return;
+
+    const availableHeight = Math.floor(container.getBoundingClientRect().bottom -
+        panel.getBoundingClientRect().top - 5);
+    if(availableHeight <= 0) return;
+
+    const minFont = 17;
+    const maxFont = window.innerWidth >= 700 ? 46 : 42;
+    const availableWidth = container.clientWidth;
+    const fits = size => {
+        panel.style.fontSize = size + 'px';
+        return panel.scrollHeight <= availableHeight && panel.scrollWidth <= availableWidth + 1;
+    };
+
+    // Tìm nhị phân, thay vì giảm một chiều từ 24px như bản cũ.
+    let low = minFont, high = maxFont, best = minFont;
+    if(fits(minFont)) {
+        while(low <= high) {
+            const mid = Math.floor((low + high) / 2);
+            if(fits(mid)) { best = mid; low = mid + 1; }
+            else high = mid - 1;
+        }
+    }
+    panel.style.fontSize = best + 'px';
+}
+
+// Xoay màn hình / thay kích thước cửa sổ: tính lại theo không gian mới,
+// không vẽ lại câu hoặc làm mất nội dung học sinh đang nhập.
+let fontResizeFrame = 0;
+function scheduleSmartFontResize() {
+    if(gameState !== 'PLAYING') return;
+    cancelAnimationFrame(fontResizeFrame);
+    fontResizeFrame = requestAnimationFrame(smartAutoFontSize);
+}
+window.addEventListener('resize', scheduleSmartFontResize);
+if(window.visualViewport) {
+    window.visualViewport.addEventListener('resize', scheduleSmartFontResize);
+}
+
+function renderNavigation() {
+    let currentPartNum = partOrder[currentPartIndex];
+    let navHtml = "";
+    paper.forEach((q, idx) => {
+        if(q.partNum === currentPartNum) {
+            let cls = "grid-item";
+            if(idx === currentIndex) cls += " active";
+            if(q.locked) cls += " locked";
+            else if(isAnswered(q)) cls += " answered";
+            
+            navHtml += `<div class="${cls}" onclick="goTo(${idx})">${getLocalQuestionIndex(idx)}</div>`;
+        }
+    });
+    document.getElementById("nav-grid").innerHTML = navHtml;
+    
+    document.getElementById("btnFinishPart").style.display = currentPartIndex < 2 ? "block" : "none";
+    document.getElementById("btnSubmit").style.display = currentPartIndex === 2 ? "block" : "none";
+}
+
+function getLocalQuestionIndex(absIndex) {
+    let pNum = paper[absIndex].partNum;
+    let cnt = 1;
+    for(let i=0; i<absIndex; i++) {
+        if(paper[i].partNum === pNum) cnt++;
+    }
+    return cnt;
+}
+function getPartLength(pNum) {
+    return paper.filter(q => q.partNum === pNum).length;
+}
+
+function isAnswered(q) {
+    if(q.partNum === 1) return q.answer !== null;
+    if(q.partNum === 2) return q.answer.filter(x => x !== null).length === 4;
+    if(q.partNum === 3) return q.answer !== null && q.answer.trim() !== "";
+    return false;
+}
+
+// =====================================================
+// XỬ LÝ NHẬP ĐÁP ÁN
+// =====================================================
+function selectMC(origIdx) {
+    if(paper[currentIndex].locked) return;
+    paper[currentIndex].answer = origIdx;
+    renderQuestion();
+}
+function selectTF(stmtIdx, val) {
+    if(paper[currentIndex].locked) return;
+    paper[currentIndex].answer[stmtIdx] = val;
+    renderQuestion();
+}
+function inputSA(val) {
+    if(paper[currentIndex].locked) return;
+    paper[currentIndex].answer = val;
+    // Debounce re-render to avoid losing focus
+    clearTimeout(window.saTimeout);
+    window.saTimeout = setTimeout(renderNavigation, 500);
+}
+
+function prevQuestion() {
+    let curP = paper[currentIndex].partNum;
+    if(currentIndex > 0 && paper[currentIndex-1].partNum === curP) {
+        currentIndex--;
+        renderQuestion();
+    }
+}
+function nextQuestion() {
+    let curP = paper[currentIndex].partNum;
+    if(currentIndex < paper.length - 1 && paper[currentIndex+1].partNum === curP) {
+        currentIndex++;
+        renderQuestion();
+    }
+}
+function goTo(idx) {
+    let curP = partOrder[currentPartIndex];
+    if(paper[idx].partNum === curP) {
+        currentIndex = idx;
+        renderQuestion();
+    }
+}
+
+// =====================================================
+// ĐỒNG HỒ & CHỐNG GIAN LẬN
+// =====================================================
+function updateTimer() {
+    if(gameState !== 'PLAYING') return;
+    let now = Date.now();
+    
+    // Timer Tổng
+    let totalUsed = (now - totalStartTime) / 1000;
+    let totalLeft = Math.max(0, (timeConfig.total * 60) - totalUsed);
+    document.getElementById("timer-total").innerText = formatTime(totalLeft);
+    
+    // Timer Phần
+    let partUsed = (now - partStartTime) / 1000;
+    let partLeft = Math.max(0, partTimeBudget - partUsed);
+    document.getElementById("timer-part").innerText = formatTime(partLeft);
+    
+    if(partLeft <= 0) {
+        finishPart(true);
+    } else if(totalLeft <= 0) {
+        submitTest(true);
+    }
+}
+function formatTime(sec) {
+    let m = Math.floor(sec / 60);
+    let s = Math.floor(sec % 60);
+    return `${m < 10 ? '0'+m : m}:${s < 10 ? '0'+s : s}`;
+}
+
+// CHỐNG RỜI TAB
+document.addEventListener("visibilitychange", () => {
+    if(gameState !== 'PLAYING') return;
+    if(document.hidden) {
+        let curQ = paper[currentIndex];
+        if(!curQ.locked) {
+            curQ.locked = true;
+            violationCount++;
+        }
+    } else {
+        alert("⚠️ PHÁT HIỆN RỜI TRANG KIỂM TRA\n\nHệ thống đã ghi nhận bạn rời khỏi trang kiểm tra. Câu hỏi đang mở đã bị khóa và tính 0 điểm. Bạn không thể quay lại làm câu này trong lượt hiện tại.");
+        renderQuestion();
+    }
+});
+
+// =====================================================
+// NỘP BÀI & CHẤM ĐIỂM (BỘ CHẤM THÔNG MINH)
+// =====================================================
+function submitTest(auto = false) {
+    if(gameState === 'DONE') return; // không chấm/gửi lại do bấm Nộp bài nhiều lần
+    if(!auto && !confirm("Bạn có chắc chắn muốn nộp bài? Sau khi nộp, bạn không thể thay đổi câu trả lời.")) return;
+    
+    gameState = 'DONE';
+    clearInterval(timerInterval);
+    
+    let p1Score = 0, p2Score = 0, p3Score = 0;
+    
+    paper.forEach(q => {
+        if(q.locked) return; // 0 điểm nếu bị khóa
+        
+        if(q.partNum === 1) {
+            if(q.answer === q.ans) p1Score += 0.25;
+        } 
+        else if(q.partNum === 2) {
+            let correctCount = 0;
+            for(let i=0; i<4; i++) {
+                if(q.answer[i] === q.ans[i]) correctCount++;
+            }
+            if(correctCount === 1) p2Score += 0.10;
+            else if(correctCount === 2) p2Score += 0.25;
+            else if(correctCount === 3) p2Score += 0.50;
+            else if(correctCount === 4) p2Score += 1.00;
+        }
+        else if(q.partNum === 3) {
+            if(checkSmartAnswer(q.ans, q.answer)) p3Score += 0.25;
+        }
+    });
+    
+    let total = p1Score + p2Score + p3Score;
+    
+    document.getElementById("screen-game").classList.remove("active");
+    document.getElementById("screen-result").classList.add("active");
+    
+    document.getElementById("res-name").innerText = `${studentInfo.name} - ${studentInfo.class}`;
+    document.getElementById("res-score").innerText = `${total.toFixed(2)} / 10.00`;
+    document.getElementById("res-details").innerHTML = `
+        Phần 1: ${p1Score.toFixed(2)} / 4.50<br>
+        Phần 2: ${p2Score.toFixed(2)} / 4.00<br>
+        Phần 3: ${p3Score.toFixed(2)} / 1.50
+    `;
+    
+    if(violationCount > 0) {
+        document.getElementById("res-violations").innerText = `⚠️ Có ${violationCount} câu hỏi bị khóa 0 điểm do rời trang.`;
+    }
+
+    // Chỉ lấy dữ liệu kết quả đã tính — không thay đổi bộ chấm hay ngân hàng câu hỏi.
+    // Các trường name/className/p1/p2/p3 tương thích cấu trúc gửi của mã tham chiếu.
+    sheetPayload = {
+        sheetName: normalizeClassForSheet(studentInfo.class),
+        attemptId: sheetAttemptId || makeSheetAttemptId(),
+        submittedAt: new Date().toISOString(),
+        name: studentInfo.name,
+        className: normalizeClassForSheet(studentInfo.class),
+        totalScore: total.toFixed(2).replace('.', ','),
+        p1: p1Score.toFixed(2).replace('.', ','),
+        p2: p2Score.toFixed(2).replace('.', ','),
+        p3: p3Score.toFixed(2).replace('.', ','),
+        lockedCount: violationCount,
+        questionCount: paper.length,
+        durationSeconds: Math.max(0, Math.floor((Date.now() - totalStartTime) / 1000))
+    };
+    sendResultToGoogleSheet();
+}
+
+// =====================================================
+// BỔ SUNG: XEM LẠI CÂU SAI SAU KHI NỘP (CHỈ ĐỌC)
+// Không sửa ngân hàng, đáp án, điểm hoặc trạng thái bài làm.
+// =====================================================
+function getReviewStatus(q) {
+    if(q.locked) return 'locked';
+    if(q.partNum === 1) {
+        if(q.answer === q.ans) return null;
+        return q.answer === null ? 'unanswered' : 'incorrect';
+    }
+    if(q.partNum === 2) {
+        // Giống điều kiện so sánh bốn mệnh đề trong submitTest().
+        let correctCount = 0;
+        for(let i = 0; i < 4; i++) {
+            if(q.answer[i] === q.ans[i]) correctCount++;
+        }
+        if(correctCount === 4) return null;
+        return q.answer.some(v => v === null) ? 'unanswered' : 'incorrect';
+    }
+    if(q.partNum === 3) {
+        // Tái sử dụng bộ chấm đang có để không tạo quy tắc đúng/sai mới.
+        if(checkSmartAnswer(q.ans, q.answer)) return null;
+        return q.answer === null || String(q.answer).trim() === '' ? 'unanswered' : 'incorrect';
+    }
+    return null;
+}
+
+function reviewAddText(parent, className, text) {
+    const el = document.createElement('div');
+    el.className = className;
+    el.textContent = text;
+    parent.appendChild(el);
+    return el;
+}
+
+function reviewAddAnswer(parent, label, answer, kind) {
+    const line = document.createElement('div');
+    line.className = `review-answer-line ${kind}`;
+    const heading = document.createElement('span');
+    heading.className = 'review-answer-label';
+    heading.textContent = `${label}: `;
+    const value = document.createElement('span');
+    // textContent tránh việc câu trả lời tự nhập bị diễn giải là HTML.
+    value.textContent = answer;
+    line.append(heading, value);
+    parent.appendChild(line);
+}
+
+function showWrongAnswers() {
+    // Không tiết lộ đáp án trước khi bài làm kết thúc.
+    if(gameState !== 'DONE') return;
+
+    const summary = document.getElementById('review-summary');
+    const list = document.getElementById('review-list');
+    list.replaceChildren();
+
+    let incorrect = 0, unanswered = 0, locked = 0;
+    paper.forEach((q, index) => {
+        const status = getReviewStatus(q);
+        if(status === null) return; // Câu đủ điểm không cần đưa vào danh sách sai.
+        if(status === 'incorrect') incorrect++;
+        if(status === 'unanswered') unanswered++;
+        if(status === 'locked') locked++;
+
+        const card = document.createElement('section');
+        card.className = 'review-card';
+        const header = document.createElement('div');
+        header.className = 'review-card-header';
+        reviewAddText(header, 'review-card-title', `Phần ${q.partNum} — Câu ${getLocalQuestionIndex(index)}`);
+        const statusLabel = status === 'locked' ? 'BỊ KHÓA — 0 ĐIỂM' :
+                            status === 'unanswered' ? 'CHƯA HOÀN THÀNH' : 'TRẢ LỜI SAI';
+        reviewAddText(header, `review-tag ${status === 'locked' ? 'locked' : ''}`, statusLabel);
+        card.appendChild(header);
+        reviewAddText(card, 'review-question', q.text);
+
+        if(q.partNum === 1) {
+            // Dùng origIdx của phương án đã xáo trộn, không dựa vào chữ A/B/C/D.
+            q.dispOpts.forEach(opt => {
+                const correct = opt.origIdx === q.ans;
+                const selected = opt.origIdx === q.answer;
+                const classes = 'review-option' + (correct ? ' is-correct' : '') + (selected ? ' is-selected' : '');
+                const optionEl = reviewAddText(card, classes, opt.txt);
+                if(correct || selected) {
+                    const marks = [];
+                    if(selected) marks.push('Học sinh đã chọn');
+                    if(correct) marks.push('Đáp án đúng');
+                    reviewAddText(optionEl, 'review-option-mark', marks.join(' • '));
+                }
+            });
+            reviewAddAnswer(card, 'Học sinh đã chọn', q.answer === null ? 'Chưa trả lời' : q.opts[q.answer], 'student');
+            reviewAddAnswer(card, 'Đáp án đúng', q.opts[q.ans], 'correct');
+        } else if(q.partNum === 2) {
+            // Giữ một câu nguyên khối gồm bốn mệnh đề a, b, c, d.
+            let countCorrect = 0;
+            for(let i = 0; i < 4; i++) {
+                const selected = q.answer[i];
+                const correct = q.ans[i];
+                const matched = selected === correct;
+                if(matched) countCorrect++;
+                const stmtEl = document.createElement('div');
+                stmtEl.className = `review-statement ${matched ? '' : 'is-wrong'}`;
+                reviewAddText(stmtEl, '', q.stmts[i]);
+                reviewAddAnswer(stmtEl, 'Học sinh chọn', selected === null ? 'Chưa trả lời' : (selected ? 'Đúng' : 'Sai'), 'student');
+                reviewAddAnswer(stmtEl, 'Đáp án chuẩn', correct ? 'Đúng' : 'Sai', 'correct');
+                card.appendChild(stmtEl);
+            }
+            reviewAddText(card, 'review-note', `Số mệnh đề đúng: ${countCorrect}/4. Điểm câu vẫn tính theo thang điểm hiện có.`);
+        } else if(q.partNum === 3) {
+            reviewAddAnswer(card, 'Học sinh đã nhập', q.answer === null || String(q.answer).trim() === '' ? 'Chưa trả lời' : String(q.answer), 'student');
+            reviewAddAnswer(card, 'Đáp án gốc', String(q.ans), 'correct');
+            reviewAddText(card, 'review-note', 'Đối chiếu đúng/sai sử dụng chính bộ chấm trả lời ngắn hiện tại; không chấm lại hoặc thay đổi điểm.');
+        }
+
+        if(q.locked) {
+            reviewAddText(card, 'review-note', 'Câu bị khóa do rời trang trong lượt kiểm tra nên nhận 0 điểm, kể cả khi câu trả lời đã lưu trùng với đáp án đúng.');
+        }
+        list.appendChild(card);
+    });
+
+    const needReview = incorrect + unanswered + locked;
+    summary.textContent = needReview === 0
+        ? 'Bạn không có câu sai, câu bỏ trống hoặc câu bị khóa cần xem lại.'
+        : `Có ${needReview} câu cần xem lại: ${incorrect} câu trả lời sai, ${unanswered} câu chưa hoàn thành và ${locked} câu bị khóa. Đây là màn hình chỉ xem, không thay đổi kết quả đã chấm.`;
+    document.getElementById('screen-result').classList.remove('active');
+    document.getElementById('screen-review').classList.add('active');
+    window.scrollTo(0, 0);
+}
+
+function backToResults() {
+    if(gameState !== 'DONE') return;
+    document.getElementById('screen-review').classList.remove('active');
+    document.getElementById('screen-result').classList.add('active');
+    window.scrollTo(0, 0);
+}
+
+// Bộ chấm thông minh cho Toán học và Trả lời ngắn
+function checkSmartAnswer(correctStr, studentStr) {
+    if(!studentStr) return false;
+    // Chuẩn hóa loại bỏ khoảng trắng và chuyển dấu phẩy thành dấu chấm
+    let c = correctStr.trim().replace(/,/g, '.');
+    let s = studentStr.trim().replace(/,/g, '.');
+    
+    if(c.toLowerCase() === s.toLowerCase()) return true;
+    
+    // Thử so sánh giá trị số
+    let cNum = parseFloat(c);
+    let sNum = parseFloat(s);
+    
+    if(!isNaN(cNum) && !isNaN(sNum)) {
+        // Chấp nhận sai số nhỏ do máy tính hoặc các cách viết 1.70 vs 1.7
+        if(Math.abs(cNum - sNum) < 0.001) return true;
+    }
+    
+    return false;
+}
+</script>
+</body>
+</html>
